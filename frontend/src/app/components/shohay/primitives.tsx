@@ -107,9 +107,11 @@ const SEVERITY = {
   5: { bn: "সংকটাপন্ন", en: "Critical", v: "--need-4" },
 } as const;
 
-export function NeedSeverityTag({ severity }: { severity: 1 | 2 | 3 | 4 | 5 }) {
+export function NeedSeverityTag({ severity }: { severity: number }) {
   const t = useT();
-  const s = SEVERITY[severity];
+  // Clamp to the 1–5 scale so out-of-range data can't index past the map.
+  const level = (Math.min(5, Math.max(1, Math.round(severity))) || 1) as 1 | 2 | 3 | 4 | 5;
+  const s = SEVERITY[level];
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs"

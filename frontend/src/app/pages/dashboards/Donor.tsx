@@ -29,7 +29,7 @@ const STATUS = {
 
 function StatusPill({ s }: { s: MyDonation["status"] }) {
   const t = useT();
-  const x = STATUS[s];
+  const x = STATUS[s as keyof typeof STATUS] ?? STATUS.pledged;
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs" style={{ background: `color-mix(in srgb, ${x.c} 18%, transparent)` }}>
       <span className="h-1.5 w-1.5 rounded-full" style={{ background: x.c }} />{t(x.bn, x.en)}

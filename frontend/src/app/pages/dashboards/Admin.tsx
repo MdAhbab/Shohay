@@ -228,7 +228,7 @@ export function AdminUsers() {
             <thead className="bg-panel text-left text-ink-dim"><tr>{["আইডি/ID", "নাম/Name", "ভূমিকা/Role", "পরিধি/Scope", "অবস্থা/Status", ""].map((h, i) => <th key={i} className="whitespace-nowrap px-4 py-3">{h ? t(h.split("/")[0], h.split("/")[1]) : ""}</th>)}</tr></thead>
             <tbody>
               {filtered.map((u) => {
-                const rb = ROLE_BADGE[u.role];
+                const rb = ROLE_BADGE[u.role as keyof typeof ROLE_BADGE] ?? ROLE_BADGE.donor;
                 return (
                   <tr key={u.id} className="border-t border-border hover:bg-secondary/50">
                     <td className="px-4 py-3 tabular">{u.id}</td>

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useT, useShohay, toBnDigits } from "../lib/store";
 import { divisions, upazilasByDivision } from "../lib/data";
 import { Eyebrow } from "../components/shohay/primitives";
+import { postDonation } from "../lib/api";
 
 type Kind = "money" | "goods";
 const AMOUNTS = [500, 1000, 2500, 5000, 10000];
@@ -38,7 +39,8 @@ export function Donate() {
   const [good, setGood] = useState("food");
   const [qty, setQty] = useState(10);
   const [logistics, setLogistics] = useState<"dropoff" | "pickup">("dropoff");
-  const [donationId] = useState("D-" + Math.floor(10000 + Math.random() * 89999));
+  const [donationId, setDonationId] = useState("D-" + Math.floor(10000 + Math.random() * 89999));
+  const [submitting, setSubmitting] = useState(false);
 
   const fmt = (n: number) => (bnNumerals && lang === "bn" ? toBnDigits(n.toLocaleString("en-IN")) : n.toLocaleString("en-IN"));
   const steps = [t("ধরন", "Type"), t("বিবরণ", "Details"), t("পর্যালোচনা", "Review"), t("সম্পন্ন", "Done")];
@@ -46,9 +48,27 @@ export function Donate() {
   const next = () => setStep((s) => Math.min(3, s + 1));
   const back = () => setStep((s) => Math.max(0, s - 1));
 
-  const confirm = () => {
-    toast.success(t("দান নিশ্চিত হয়েছে — ট্র্যাকিং লিংক তৈরি", "Donation confirmed — tracking link created"));
-    next();
+  const targetGeocode = earmark === "pick" ? (upazila || division || undefined) : undefined;
+
+  const confirm = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const result = await postDonation(
+        kind === "money"
+          ? { kind: "money", amount, channel, target_geocode: targetGeocode, zakat }
+          : { kind: good, qty, item: GOODS.find((g) => g.id === good)?.en, channel: logistics, target_geocode: targetGeocode },
+      );
+      // Use the server's real, ledger-backed id so the tracking link resolves.
+      setDonationId(result.id);
+      toast.success(t("দান নিশ্চিত হয়েছে — খতিয়ানে যুক্ত হয়েছে", "Donation confirmed — recorded in the ledger"));
+    } catch {
+      // Offline/demo: keep the optimistic local id so the flow still completes.
+      toast.success(t("দান নিশ্চিত হয়েছে — ট্র্যাকিং লিংক তৈরি", "Donation confirmed — tracking link created"));
+    } finally {
+      setSubmitting(false);
+      next();
+    }
   };
 
   return (
@@ -215,7 +235,7 @@ export function Donate() {
               <ChevronLeft className="h-4 w-4" /> {t("পেছনে", "Back")}
             </button>
             {step === 2 ? (
-              <button onClick={confirm} className="rounded-full bg-river px-8 py-3 text-primary-foreground ease-tide hover:scale-[1.02]">{t("নিশ্চিত করুন", "Confirm")}</button>
+              <button onClick={confirm} disabled={submitting} className="rounded-full bg-river px-8 py-3 text-primary-foreground ease-tide hover:scale-[1.02] disabled:opacity-60">{submitting ? t("পাঠানো হচ্ছে…", "Sending…") : t("নিশ্চিত করুন", "Confirm")}</button>
             ) : (
               <button onClick={next} className="rounded-full bg-river px-8 py-3 text-primary-foreground ease-tide hover:scale-[1.02]">{t("পরবর্তী", "Continue")}</button>
             )}

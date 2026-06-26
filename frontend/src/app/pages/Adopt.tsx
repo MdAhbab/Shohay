@@ -4,7 +4,7 @@ import { QrCode, Building2, Globe2, Heart, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useT, toBnDigits } from "../lib/store";
 import { Eyebrow, NumberCounter, VerifiedSeal } from "../components/shohay/primitives";
-import { divisions, upazilasByDivision } from "../lib/data";
+import { upazilasByDivision } from "../lib/data";
 
 export function Adopt() {
   const t = useT();

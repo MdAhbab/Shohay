@@ -78,7 +78,7 @@ export function Ledger() {
             </thead>
             <tbody>
               {ledgerRows.map((r) => {
-                const a = ACTION_LABEL[r.action];
+                const a = ACTION_LABEL[r.action as keyof typeof ACTION_LABEL] ?? ACTION_LABEL.pledge;
                 return (
                   <tr key={r.id} className="border-t border-border hover:bg-secondary/50">
                     <td className="px-4 py-3 tabular">{r.id}</td>
