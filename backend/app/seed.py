@@ -176,7 +176,16 @@ def seed_data(db=None):
     ]
     for mu in managed_users:
         db.add(models.ManagedUser(**mu))
-        
+
+    # Demo auth users — one per role, with known phones for one-tap sign-in.
+    auth_users = [
+      { "id": "U-donor-1", "name_bn": "রওশন আরা", "name_en": "Roushan Ara", "role": "donor", "org_bn": "নাগরিক দাতা", "org_en": "Citizen donor", "scope_bn": "ঢাকা", "scope_en": "Dhaka", "phone": "01700000001" },
+      { "id": "U-mod-1", "name_bn": "আবুল কালাম", "name_en": "Abul Kalam", "role": "moderator", "org_bn": "উপজেলা মডারেটর", "org_en": "Upazila moderator", "scope_bn": "ভোলা জেলা", "scope_en": "Bhola district", "phone": "01700000002" },
+      { "id": "U-adm-1", "name_bn": "ড. নুসরাত জাহান", "name_en": "Dr. Nusrat Jahan", "role": "admin", "org_bn": "a2i · দুর্যোগ ব্যবস্থাপনা", "org_en": "a2i · Disaster Management", "scope_bn": "জাতীয়", "scope_en": "National", "phone": "01700000003" },
+    ]
+    for au in auth_users:
+        db.add(models.AuthUser(**au))
+
     db.commit()
     if owns_session:
         db.close()

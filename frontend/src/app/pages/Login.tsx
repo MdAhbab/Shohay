@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { HandCoins, ShieldCheck, Building2, ArrowRight, Phone, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useT, toBnDigits } from "../lib/store";
-import { useAuth, HOME_FOR, type Role } from "../lib/auth";
+import { useAuth, HOME_FOR, DEMO_PHONE, type Role } from "../lib/auth";
 import { Eyebrow } from "../components/shohay/primitives";
 
 const ROLE_CARDS: { role: Role; icon: any; bn: string; en: string; d_bn: string; d_en: string }[] = [
@@ -17,18 +17,54 @@ export function Login() {
   const t = useT();
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { requestOtp, verifyOtp, loginDemo } = useAuth();
   const [role, setRole] = useState<Role>("donor");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(DEMO_PHONE.donor);
   const [stage, setStage] = useState<"phone" | "otp">("phone");
   const [otp, setOtp] = useState("");
+  const [busy, setBusy] = useState(false);
 
   const from = (location.state as { from?: string } | null)?.from;
+  const go = (target: string) => navigate(from && from !== "/login" ? from : target, { replace: true });
 
-  const finish = () => {
-    login(role);
-    toast.success(t("সফলভাবে সাইন ইন হয়েছে", "Signed in successfully"));
-    navigate(from && from !== "/login" ? from : HOME_FOR[role], { replace: true });
+  const pickRole = (r: Role) => {
+    setRole(r);
+    // Prefill the matching demo number for one-tap sign-in.
+    if (!phone || Object.values(DEMO_PHONE).includes(phone)) setPhone(DEMO_PHONE[r]);
+  };
+
+  const sendOtp = async () => {
+    if (busy) return;
+    setBusy(true);
+    const code = await requestOtp(phone.trim());
+    if (code) {
+      setOtp(code); // dev convenience: prefill the returned code
+      toast(t(`OTP পাঠানো হয়েছে (ডেমো: ${code})`, `OTP sent (demo: ${code})`));
+    } else {
+      toast(t("OTP পাঠানো হয়েছে — যেকোনো কোড দিন (ডেমো)", "OTP sent — any code works (demo)"));
+    }
+    setStage("otp");
+    setBusy(false);
+  };
+
+  const verify = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const u = await verifyOtp(phone.trim(), otp.trim(), role);
+      toast.success(t("সফলভাবে সাইন ইন হয়েছে", "Signed in successfully"));
+      go(HOME_FOR[u.role]);
+    } catch {
+      toast.error(t("OTP যাচাই ব্যর্থ", "OTP verification failed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const quickDemo = () => {
+    loginDemo(role);
+    toast.success(t("ডেমো প্রবেশ", "Demo sign-in"));
+    go(HOME_FOR[role]);
   };
 
   return (
@@ -61,7 +97,7 @@ export function Login() {
             {ROLE_CARDS.map((r) => (
               <button
                 key={r.role}
-                onClick={() => setRole(r.role)}
+                onClick={() => pickRole(r.role)}
                 className={`flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left ease-tide transition-all ${role === r.role ? "border-river bg-river/5" : "border-border hover:border-river/40"}`}
               >
                 <span className={`flex h-10 w-10 items-center justify-center rounded-lg ${role === r.role ? "bg-river text-primary-foreground" : "bg-secondary text-river"}`}>
@@ -79,22 +115,22 @@ export function Login() {
           <div className="my-5 h-px bg-border" />
 
           {stage === "phone" ? (
-            <form onSubmit={(e) => { e.preventDefault(); setStage("otp"); toast(t("OTP পাঠানো হয়েছে (ডেমো: ১২৩৪৫৬)", "OTP sent (demo: 123456)")); }}>
+            <form onSubmit={(e) => { e.preventDefault(); sendOtp(); }}>
               <label>{t("মোবাইল নম্বর", "Mobile number")}</label>
               <div className="relative mt-2">
                 <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-dim" />
                 <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="01XXXXXXXXX" inputMode="tel" className="w-full rounded-lg border border-border bg-input-background py-3 pl-10 pr-4 tabular" />
               </div>
-              <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-river py-3 text-primary-foreground">
-                {t("OTP পাঠান", "Send OTP")} <ArrowRight className="h-4 w-4" />
+              <button disabled={busy} className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-river py-3 text-primary-foreground disabled:opacity-60">
+                {busy ? t("পাঠানো হচ্ছে…", "Sending…") : t("OTP পাঠান", "Send OTP")} <ArrowRight className="h-4 w-4" />
               </button>
             </form>
           ) : (
-            <form onSubmit={(e) => { e.preventDefault(); finish(); }}>
+            <form onSubmit={(e) => { e.preventDefault(); verify(); }}>
               <label>{t("OTP লিখুন", "Enter OTP")}</label>
               <input value={otp} onChange={(e) => setOtp(e.target.value)} placeholder={toBnDigits("------")} inputMode="numeric" className="mt-2 w-full rounded-lg border border-border bg-input-background px-4 py-3 text-center tracking-[0.5em] tabular" />
-              <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-river py-3 text-primary-foreground">
-                <Check className="h-4 w-4" /> {t("যাচাই ও প্রবেশ", "Verify & enter")}
+              <button disabled={busy} className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-river py-3 text-primary-foreground disabled:opacity-60">
+                <Check className="h-4 w-4" /> {busy ? t("যাচাই হচ্ছে…", "Verifying…") : t("যাচাই ও প্রবেশ", "Verify & enter")}
               </button>
               <button type="button" onClick={() => setStage("phone")} className="mt-3 w-full text-sm text-ink-dim hover:text-ink">
                 {t("নম্বর পরিবর্তন করুন", "Change number")}
@@ -103,7 +139,7 @@ export function Login() {
           )}
 
           {/* quick demo bypass */}
-          <button onClick={finish} className="mt-4 w-full rounded-full border border-border py-2.5 text-sm text-ink-dim hover:bg-secondary">
+          <button onClick={quickDemo} className="mt-4 w-full rounded-full border border-border py-2.5 text-sm text-ink-dim hover:bg-secondary">
             {t("দ্রুত ডেমো প্রবেশ", "Quick demo sign-in")} →
           </button>
         </motion.div>

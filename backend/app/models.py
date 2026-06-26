@@ -128,3 +128,15 @@ class ManagedUser(Base):
     scope_bn = Column(String)
     scope_en = Column(String)
     status = Column(String)
+
+class AuthUser(Base):
+    __tablename__ = "auth_users"
+    id = Column(String, primary_key=True, index=True)
+    name_bn = Column(String)
+    name_en = Column(String)
+    role = Column(String)  # donor | moderator | admin
+    org_bn = Column(String)
+    org_en = Column(String)
+    scope_bn = Column(String)
+    scope_en = Column(String)
+    phone = Column(String, index=True)

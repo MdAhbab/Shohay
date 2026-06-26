@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Navigate } from "react-router";
+import { requestOtp as apiRequestOtp, verifyOtp as apiVerifyOtp, fetchMe, type AuthUser } from "./api";
 
 export type Role = "donor" | "moderator" | "admin";
 
@@ -15,74 +16,106 @@ export interface User {
   phone: string;
 }
 
-// Mock personas — no backend; one per stakeholder role for the demo.
+// Demo personas + their seeded phone numbers. Used to prefill the login form
+// and as an offline fallback when no backend is reachable (static demo).
 export const PERSONAS: Record<Role, User> = {
   donor: {
-    id: "U-donor-1",
-    name_bn: "রওশন আরা",
-    name_en: "Roushan Ara",
-    role: "donor",
-    org_bn: "নাগরিক দাতা",
-    org_en: "Citizen donor",
-    scope_bn: "ঢাকা",
-    scope_en: "Dhaka",
-    phone: "+8801XXXXXX12",
+    id: "U-donor-1", name_bn: "রওশন আরা", name_en: "Roushan Ara", role: "donor",
+    org_bn: "নাগরিক দাতা", org_en: "Citizen donor", scope_bn: "ঢাকা", scope_en: "Dhaka", phone: "01700000001",
   },
   moderator: {
-    id: "U-mod-1",
-    name_bn: "আবুল কালাম",
-    name_en: "Abul Kalam",
-    role: "moderator",
-    org_bn: "উপজেলা মডারেটর",
-    org_en: "Upazila moderator",
-    scope_bn: "ভোলা জেলা",
-    scope_en: "Bhola district",
-    phone: "+8801XXXXXX34",
+    id: "U-mod-1", name_bn: "আবুল কালাম", name_en: "Abul Kalam", role: "moderator",
+    org_bn: "উপজেলা মডারেটর", org_en: "Upazila moderator", scope_bn: "ভোলা জেলা", scope_en: "Bhola district", phone: "01700000002",
   },
   admin: {
-    id: "U-adm-1",
-    name_bn: "ড. নুসরাত জাহান",
-    name_en: "Dr. Nusrat Jahan",
-    role: "admin",
-    org_bn: "a2i · দুর্যোগ ব্যবস্থাপনা",
-    org_en: "a2i · Disaster Management",
-    scope_bn: "জাতীয়",
-    scope_en: "National",
-    phone: "+8801XXXXXX56",
+    id: "U-adm-1", name_bn: "ড. নুসরাত জাহান", name_en: "Dr. Nusrat Jahan", role: "admin",
+    org_bn: "a2i · দুর্যোগ ব্যবস্থাপনা", org_en: "a2i · Disaster Management", scope_bn: "জাতীয়", scope_en: "National", phone: "01700000003",
   },
 };
 
+export const DEMO_PHONE: Record<Role, string> = {
+  donor: PERSONAS.donor.phone,
+  moderator: PERSONAS.moderator.phone,
+  admin: PERSONAS.admin.phone,
+};
+
+function asUser(u: AuthUser): User {
+  const role: Role = u.role === "admin" || u.role === "moderator" ? u.role : "donor";
+  return { ...u, role };
+}
+
 interface AuthState {
   user: User | null;
-  login: (role: Role) => void;
+  /** Ask for an OTP. Returns the dev code if the backend exposes it, else null. */
+  requestOtp: (phone: string) => Promise<string | null>;
+  /** Verify an OTP; falls back to the demo persona for `role` if offline. */
+  verifyOtp: (phone: string, code: string, role: Role) => Promise<User>;
+  /** Immediate persona sign-in (quick demo / offline). */
+  loginDemo: (role: Role) => void;
   logout: () => void;
 }
 
 const Ctx = createContext<AuthState | null>(null);
-const KEY = "shohay.auth.role";
+const TOKEN_KEY = "shohay.auth.token";
+const USER_KEY = "shohay.auth.user";
+
+function readStoredUser(): User | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(USER_KEY);
+    return raw ? (JSON.parse(raw) as User) : null;
+  } catch {
+    return null;
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    if (typeof window === "undefined") return null;
-    const r = window.localStorage.getItem(KEY) as Role | null;
-    if (r && PERSONAS[r]) return PERSONAS[r];
-    // Preview/demo: on the public Vercel deployment (no backend), start signed in
-    // as admin so visitors land on a dashboard. Login page still lets them switch
-    // roles (donor/moderator/admin) — all password-free. Only affects *.vercel.app.
-    if (/\.vercel\.app$/i.test(window.location.hostname)) return PERSONAS.admin;
-    return null;
-  });
+  const [user, setUser] = useState<User | null>(readStoredUser);
 
+  const persist = (u: User | null, token?: string) => {
+    setUser(u);
+    if (typeof window === "undefined") return;
+    if (u) window.localStorage.setItem(USER_KEY, JSON.stringify(u));
+    else window.localStorage.removeItem(USER_KEY);
+    if (token) window.localStorage.setItem(TOKEN_KEY, token);
+    if (!u) window.localStorage.removeItem(TOKEN_KEY);
+  };
+
+  // Revalidate a real (non-demo) token against the backend on load.
   useEffect(() => {
-    if (user) window.localStorage.setItem(KEY, user.role);
-    else window.localStorage.removeItem(KEY);
-  }, [user]);
+    const token = window.localStorage.getItem(TOKEN_KEY);
+    if (!token || token.startsWith("demo-")) return;
+    fetchMe(token)
+      .then((u) => persist(asUser(u), token))
+      .catch(() => persist(null));
+  }, []);
 
   const value = useMemo<AuthState>(
     () => ({
       user,
-      login: (role) => setUser(PERSONAS[role]),
-      logout: () => setUser(null),
+      requestOtp: async (phone) => {
+        try {
+          const res = await apiRequestOtp(phone);
+          return res.dev_otp ?? null;
+        } catch {
+          return null; // offline — caller proceeds with the demo fallback
+        }
+      },
+      verifyOtp: async (phone, code, role) => {
+        try {
+          const res = await apiVerifyOtp(phone, code);
+          const u = asUser(res.user);
+          persist(u, res.token);
+          return u;
+        } catch {
+          // Offline/static demo: sign in as the chosen persona.
+          const u = PERSONAS[role];
+          persist(u, `demo-${role}`);
+          return u;
+        }
+      },
+      loginDemo: (role) => persist(PERSONAS[role], `demo-${role}`),
+      logout: () => persist(null),
     }),
     [user],
   );

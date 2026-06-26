@@ -183,6 +183,12 @@ class NeedCreate(BaseModel):
     quantity: int
     severity: int
 
+class DistributionCreate(BaseModel):
+    households: int
+    items: str
+    geocode: Optional[str] = None
+    geo: bool = True
+
 class ProofStepSchema(BaseModel):
     action: str
     ref: str
@@ -197,6 +203,33 @@ class TrackResponse(BaseModel):
     id: str
     status: str
     chain: List[ProofStepSchema]
+
+
+# ---------- auth ----------
+
+class AuthUserSchema(BaseModel):
+    id: str
+    name_bn: str
+    name_en: str
+    role: str
+    org_bn: str
+    org_en: str
+    scope_bn: str
+    scope_en: str
+    phone: str
+    class Config:
+        from_attributes = True
+
+class OtpRequest(BaseModel):
+    phone: str
+
+class OtpVerify(BaseModel):
+    phone: str
+    code: str
+
+class AuthResult(BaseModel):
+    token: str
+    user: AuthUserSchema
 
 
 class InitializeResponse(BaseModel):

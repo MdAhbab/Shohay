@@ -1,12 +1,12 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import models, schemas
+from . import models, schemas, auth as auth_module
 from .database import engine, get_db, SessionLocal, Base
 from .seed import seed_if_empty
 from .ledger import append_ledger, verify_chain
@@ -223,6 +223,40 @@ def create_donation(payload: schemas.DonationCreate, db: Session = Depends(get_d
     }
 
 
+# ---------------------------------------------------------------------------
+# Auth — phone OTP. Dev returns the code in the response; prod would SMS it.
+# ---------------------------------------------------------------------------
+
+@app.post("/api/auth/request-otp")
+def auth_request_otp(payload: schemas.OtpRequest):
+    code = auth_module.request_otp(payload.phone)
+    return {"sent": True, "dev_otp": code}
+
+
+@app.post("/api/auth/verify-otp", response_model=schemas.AuthResult)
+def auth_verify_otp(payload: schemas.OtpVerify, db: Session = Depends(get_db)):
+    result = auth_module.verify_otp(db, payload.phone, payload.code)
+    if not result:
+        raise HTTPException(status_code=401, detail="Invalid or expired code")
+    token, user = result
+    return {"token": token, "user": user}
+
+
+@app.get("/api/auth/me", response_model=schemas.AuthUserSchema)
+def auth_me(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    token = (authorization or "").removeprefix("Bearer ").strip()
+    user = auth_module.user_for_token(db, token)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return user
+
+
+@app.post("/api/auth/logout")
+def auth_logout(authorization: Optional[str] = Header(None)):
+    auth_module.revoke((authorization or "").removeprefix("Bearer ").strip())
+    return {"ok": True}
+
+
 @app.post("/api/needs")
 def create_need(payload: schemas.NeedCreate, db: Session = Depends(get_db)):
     seq = db.query(models.Need).count()
@@ -237,6 +271,25 @@ def create_need(payload: schemas.NeedCreate, db: Session = Depends(get_db)):
     db.add(need)
     db.commit()
     return {"status": "ok", "id": need_id, "verified": False}
+
+
+@app.post("/api/distributions")
+def create_distribution(payload: schemas.DistributionCreate, db: Session = Depends(get_db)):
+    seq = db.query(models.FieldLog).count()
+    log_id = f"D-{5530 + seq + 1}"
+    area_bn, area_en = _area_labels(db, payload.geocode)
+    ts = datetime.now(timezone.utc).strftime("%d %b %H:%M")
+    log = models.FieldLog(
+        id=log_id, area_bn=area_bn, area_en=area_en,
+        volunteer_bn="মাঠকর্মী", volunteer_en="Field volunteer",
+        households=payload.households, items_bn=payload.items, items_en=payload.items,
+        ts=ts, photo="", geo=payload.geo, status="pending",
+    )
+    db.add(log)
+    # A distribution is a real state change — record it on the proof chain.
+    entry = append_ledger(db, action="distribute", ref=log_id, amount=payload.items, area_bn=area_bn, area_en=area_en)
+    db.commit()
+    return {"status": "ok", "id": log_id, "ts": entry.ts, "hash": entry.hash}
 
 
 # Agent endpoints stay advisory/draft-only per AGENTS.md guardrails. The audit

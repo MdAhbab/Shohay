@@ -59,8 +59,54 @@ export function postNeed(payload: NeedPayload) {
   });
 }
 
+export interface DistributionPayload {
+  households: number;
+  items: string;
+  geocode?: string;
+  geo: boolean;
+}
+
+export function postDistribution(payload: DistributionPayload) {
+  return request<{ status: string; id: string; ts: string; hash: string }>("/distributions", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function trackDonation(id: string) {
   return request<{ id: string; status: string; chain: any[] }>(
     `/donations/${id}/track`,
   );
+}
+
+// ---------- auth ----------
+
+export interface AuthUser {
+  id: string;
+  name_bn: string;
+  name_en: string;
+  role: "donor" | "moderator" | "admin" | string;
+  org_bn: string;
+  org_en: string;
+  scope_bn: string;
+  scope_en: string;
+  phone: string;
+}
+
+export function requestOtp(phone: string) {
+  return request<{ sent: boolean; dev_otp?: string }>("/auth/request-otp", {
+    method: "POST",
+    body: JSON.stringify({ phone }),
+  });
+}
+
+export function verifyOtp(phone: string, code: string) {
+  return request<{ token: string; user: AuthUser }>("/auth/verify-otp", {
+    method: "POST",
+    body: JSON.stringify({ phone, code }),
+  });
+}
+
+export function fetchMe(token: string) {
+  return request<AuthUser>("/auth/me", { headers: { Authorization: `Bearer ${token}` } });
 }
