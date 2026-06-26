@@ -28,17 +28,21 @@ export function CoverageMap({
   selected,
   drilldown = true,
   showLayers = true,
+  lite = false,
   className = "",
 }: {
   onSelect?: (u: Unit) => void;
   selected?: Unit | null;
   drilldown?: boolean;
   showLayers?: boolean;
+  /** Force the lightweight SVG surface (e.g. landing preview / low-bandwidth). */
+  lite?: boolean;
   className?: string;
 }) {
   const t = useT();
   const reduce = useReducedMotion();
   const [layer, setLayer] = useState<Layer>("need");
+  const useSvg = lite || reduce;
 
   const layers: { id: Layer; bn: string; en: string }[] = [
     { id: "need", bn: "চাহিদার তীব্রতা", en: "Need intensity" },
@@ -67,7 +71,7 @@ export function CoverageMap({
       )}
 
       <div className="relative h-[320px] overflow-hidden rounded-xl border border-border bg-panel river-contours sm:h-[420px]">
-        {reduce ? (
+        {useSvg ? (
           <CoverageSVG layer={layer} selected={selected} onSelect={onSelect} drilldown={drilldown} />
         ) : (
           <Suspense fallback={<CoverageSVG layer={layer} selected={selected} onSelect={onSelect} drilldown={drilldown} />}>

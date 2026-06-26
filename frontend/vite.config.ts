@@ -31,6 +31,22 @@ export default defineConfig({
     },
   },
 
+  build: {
+    rollupOptions: {
+      output: {
+        // Split big, stable vendors into their own cacheable chunks so a code
+        // change doesn't bust them and they can download in parallel.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('maplibre-gl')) return 'maplibre'
+          if (/[\\/]recharts[\\/]|[\\/]d3-|[\\/]victory-/.test(id)) return 'charts'
+          if (/[\\/](react|react-dom|react-router|scheduler)[\\/]/.test(id)) return 'react-vendor'
+          if (id.includes('motion')) return 'motion'
+        },
+      },
+    },
+  },
+
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
 })

@@ -3,25 +3,17 @@ import { Link } from "react-router";
 import { motion } from "motion/react";
 import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip, CartesianGrid } from "recharts";
 import {
-  LayoutDashboard, Megaphone, Sparkles, ClipboardCheck, ShieldAlert, Users2,
+  Sparkles, ShieldAlert, Users2,
   Check, X, ChevronRight, AlertTriangle, MapPinned, HandCoins, Boxes, UserPlus, Search,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useT, toBnDigits } from "../../lib/store";
-import { type NavItem, PageHead } from "../../components/shohay/DashboardLayout";
+import { PageHead } from "../../components/shohay/DashboardLayout";
 import { StatCard, NeedSeverityTag } from "../../components/shohay/primitives";
 import {
   nationalTotals, managedCampaigns, proposedAllocations, needs, anomalies, managedUsers,
 } from "../../lib/data";
 
-export const adminNav: NavItem[] = [
-  { to: "/admin", icon: LayoutDashboard, bn: "সারসংক্ষেপ", en: "Overview", end: true },
-  { to: "/admin/campaigns", icon: Megaphone, bn: "অভিযান", en: "Campaigns" },
-  { to: "/admin/allocations", icon: Sparkles, bn: "বরাদ্দ অনুমোদন", en: "Allocations", badge: proposedAllocations.length },
-  { to: "/admin/needs", icon: ClipboardCheck, bn: "চাহিদা যাচাই", en: "Verify needs" },
-  { to: "/admin/anomalies", icon: ShieldAlert, bn: "অসঙ্গতি ও জালিয়াতি", en: "Anomalies & fraud", badge: anomalies.length },
-  { to: "/admin/users", icon: Users2, bn: "ব্যবহারকারী ও ভূমিকা", en: "Users & roles" },
-];
 
 const trend = [
   { d: "১", recv: 8, dist: 4 }, { d: "৫", recv: 22, dist: 12 }, { d: "১০", recv: 38, dist: 26 },

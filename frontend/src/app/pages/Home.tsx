@@ -101,7 +101,7 @@ export function Home() {
       {/* ---------- COVERAGE MAP PREVIEW ---------- */}
       <section className="mx-auto grid max-w-[1240px] items-center gap-10 px-4 py-12 md:grid-cols-[1.1fr_0.9fr] md:px-6">
         <motion.div {...rise}>
-          <CoverageMap drilldown={false} className="aspect-square w-full" />
+          <CoverageMap drilldown={false} lite className="aspect-square w-full" />
         </motion.div>
         <motion.div {...rise}>
           <Eyebrow bn="সরাসরি কভারেজ" en="Live coverage" />

@@ -1,24 +1,15 @@
 import { Link } from "react-router";
 import { motion } from "motion/react";
 import {
-  LayoutDashboard, Receipt, HeartHandshake, MapPinned, Settings, HandCoins,
+  Receipt, HeartHandshake, MapPinned, HandCoins,
   Users, Utensils, Droplet, ArrowRight, Download, Building2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useT, useShohay, toBnDigits } from "../../lib/store";
-import { type NavItem, PageHead } from "../../components/shohay/DashboardLayout";
+import { PageHead } from "../../components/shohay/DashboardLayout";
 import { StatCard, NumberCounter, VerifiedSeal } from "../../components/shohay/primitives";
 import { ProofChain } from "../../components/shohay/ProofChain";
 import { myDonations, myImpact, makeProofChain, upazilasByDivision, type MyDonation } from "../../lib/data";
-
-export const donorNav: NavItem[] = [
-  { to: "/account", icon: LayoutDashboard, bn: "সারসংক্ষেপ", en: "Overview", end: true },
-  { to: "/account/donations", icon: Receipt, bn: "আমার দান", en: "My donations" },
-  { to: "/account/impact", icon: HeartHandshake, bn: "আমার প্রভাব", en: "My impact" },
-  { to: "/account/adopted", icon: MapPinned, bn: "দত্তক উপজেলা", en: "Adopted upazilas" },
-  { to: "/account/receipts", icon: Download, bn: "রসিদ ও যাকাত", en: "Receipts & zakat" },
-  { to: "/account/settings", icon: Settings, bn: "সেটিংস", en: "Settings" },
-];
 
 const STATUS = {
   pledged: { bn: "প্রতিশ্রুত", en: "Pledged", c: "var(--ink-dim)" },

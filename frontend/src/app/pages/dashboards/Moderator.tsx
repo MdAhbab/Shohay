@@ -1,22 +1,15 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import {
-  LayoutDashboard, ClipboardCheck, Camera, ShieldAlert, MapPin, Check, X,
+  ClipboardCheck, Camera, ShieldAlert, MapPin, Check, X,
   AlertTriangle, ListChecks, Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useT, toBnDigits } from "../../lib/store";
-import { type NavItem, PageHead } from "../../components/shohay/DashboardLayout";
+import { PageHead } from "../../components/shohay/DashboardLayout";
 import { StatCard, NeedSeverityTag } from "../../components/shohay/primitives";
 import { ImageWithFallback } from "../../components/custom/ImageWithFallback";
 import { needs, fieldLogs, anomalies, type FieldLog } from "../../lib/data";
-
-export const moderatorNav: NavItem[] = [
-  { to: "/moderator", icon: LayoutDashboard, bn: "সারসংক্ষেপ", en: "Overview", end: true },
-  { to: "/moderator/needs", icon: ClipboardCheck, bn: "চাহিদা যাচাই", en: "Verify needs", badge: needs.filter((n) => !n.verified).length },
-  { to: "/moderator/distributions", icon: Camera, bn: "বিতরণ পর্যালোচনা", en: "Review distributions", badge: fieldLogs.filter((f) => f.status === "pending").length },
-  { to: "/moderator/anomalies", icon: ShieldAlert, bn: "অসঙ্গতি", en: "Anomalies", badge: anomalies.length },
-];
 
 export function ModeratorOverview() {
   const t = useT();
