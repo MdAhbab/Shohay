@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router";
 import { motion } from "motion/react";
 import { Search, Share2, MapPin } from "lucide-react";
@@ -7,15 +7,59 @@ import { useT } from "../lib/store";
 import { ProofChain } from "../components/shohay/ProofChain";
 import { Eyebrow, VerifiedSeal } from "../components/shohay/primitives";
 import { ImageWithFallback } from "../components/custom/ImageWithFallback";
-import { makeProofChain } from "../lib/data";
+import { makeProofChain, type ProofStep } from "../lib/data";
+import { trackDonation } from "../lib/api";
+
+// The ledger stores one row per state change; map it onto the 4-step proof
+// chain, marking each step done when its action is present.
+const STEP_TEMPLATE = [
+  { key: "pledged", action: "pledge", label_bn: "প্রতিশ্রুত", label_en: "Pledged" },
+  { key: "received", action: "receive", label_bn: "গৃহীত", label_en: "Received" },
+  { key: "allocated", action: "allocate", label_bn: "বরাদ্দকৃত", label_en: "Allocated" },
+  { key: "distributed", action: "distribute", label_bn: "বিতরণকৃত", label_en: "Distributed" },
+] as const;
+
+function chainToSteps(chain: any[]): ProofStep[] {
+  return STEP_TEMPLATE.map((s) => {
+    const row = chain.find((r) => r.action === s.action);
+    return {
+      key: s.key,
+      label_bn: s.label_bn,
+      label_en: s.label_en,
+      detail_bn: row ? `${row.amount} • ${row.area_bn}` : "—",
+      detail_en: row ? `${row.amount} • ${row.area_en}` : "—",
+      ts: row?.ts ?? "",
+      hash: row?.hash ? `${row.hash}…` : "—",
+      done: !!row,
+    };
+  });
+}
 
 export function Track() {
   const t = useT();
   const params = useParams();
   const [id, setId] = useState(params.id ?? "");
   const [active, setActive] = useState(params.id ?? "");
+  const [steps, setSteps] = useState<ProofStep[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const steps = active ? makeProofChain(active) : [];
+  const load = useCallback(async (target: string) => {
+    if (!target) { setActive(""); setSteps([]); return; }
+    setActive(target);
+    setLoading(true);
+    try {
+      const res = await trackDonation(target);
+      // Real ledger chain if the id exists; otherwise the demo chain so the
+      // showcase still illustrates the model for an arbitrary id.
+      setSteps(res.chain?.length ? chainToSteps(res.chain) : makeProofChain(target));
+    } catch {
+      setSteps(makeProofChain(target));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { if (params.id) load(params.id); }, [params.id, load]);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 md:px-6">
@@ -23,7 +67,7 @@ export function Track() {
       <h1 className="mt-4 text-[clamp(1.6rem,4vw,2.4rem)]">{t("আপনার দানের যাত্রা", "Your donation's journey")}</h1>
 
       <form
-        onSubmit={(e) => { e.preventDefault(); setActive(id); }}
+        onSubmit={(e) => { e.preventDefault(); load(id.trim()); }}
         className="mt-6 flex gap-2"
       >
         <div className="relative flex-1">
@@ -35,14 +79,14 @@ export function Track() {
             className="w-full rounded-full border border-border bg-input-background py-3 pl-10 pr-4"
           />
         </div>
-        <button className="rounded-full bg-river px-6 py-3 text-primary-foreground">{t("খুঁজুন", "Track")}</button>
+        <button disabled={loading} className="rounded-full bg-river px-6 py-3 text-primary-foreground disabled:opacity-60">{loading ? t("খোঁজা হচ্ছে…", "Tracking…") : t("খুঁজুন", "Track")}</button>
       </form>
 
       {!active && (
         <p className="mt-6 text-ink-dim">{t("আপনার রসিদ বা SMS-এ প্রাপ্ত আইডি দিয়ে দানের অবস্থা দেখুন।", "Use the ID from your receipt or SMS to view status.")}</p>
       )}
 
-      {active && (
+      {active && steps.length > 0 && (
         <div className="mt-8 grid gap-8 md:grid-cols-[1fr_320px]">
           <div className="rounded-2xl border border-border bg-bg-elev p-6 md:p-8">
             <div className="mb-6 flex items-center justify-between">
