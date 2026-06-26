@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Navigate } from "react-router";
 
 export type Role = "donor" | "moderator" | "admin";
 
@@ -93,6 +94,15 @@ export function useAuth() {
   const ctx = useContext(Ctx);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
+}
+
+/** Gate a dashboard subtree to a role: redirect to login when unauthenticated,
+ *  or to the user's own home when their role doesn't match the area. */
+export function RequireRole({ role, children }: { role: Role; children: ReactNode }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== role) return <Navigate to={HOME_FOR[user.role]} replace />;
+  return <>{children}</>;
 }
 
 export const HOME_FOR: Record<Role, string> = {

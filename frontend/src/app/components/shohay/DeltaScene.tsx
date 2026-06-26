@@ -1,4 +1,4 @@
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useShohay } from "../../lib/store";
 import { divisions } from "../../lib/data";
 
@@ -18,6 +18,9 @@ const FADE_MASK =
 
 export function DeltaScene({ className = "" }: { className?: string }) {
   const { theme } = useShohay();
+  // Lite tier: honour the OS "reduce motion" setting — render the calm final
+  // state instead of the looping river/ping animations (battery + low-end cost).
+  const reduce = useReducedMotion();
 
   return (
     <div
@@ -56,18 +59,20 @@ export function DeltaScene({ className = "" }: { className?: string }) {
         {RIVERS.map((d, i) => (
           <g key={i}>
             <path d={d} fill="none" stroke="url(#river-stroke)" strokeWidth="0.9" strokeLinecap="round" />
-            <motion.path
-              d={d}
-              fill="none"
-              stroke="var(--river-2)"
-              strokeWidth="1.1"
-              strokeLinecap="round"
-              strokeDasharray="2 10"
-              initial={{ strokeDashoffset: 0 }}
-              animate={{ strokeDashoffset: -120 }}
-              transition={{ duration: 6 + i, repeat: Infinity, ease: "linear" }}
-              style={{ filter: "drop-shadow(0 0 1.5px var(--river-2))" }}
-            />
+            {!reduce && (
+              <motion.path
+                d={d}
+                fill="none"
+                stroke="var(--river-2)"
+                strokeWidth="1.1"
+                strokeLinecap="round"
+                strokeDasharray="2 10"
+                initial={{ strokeDashoffset: 0 }}
+                animate={{ strokeDashoffset: -120 }}
+                transition={{ duration: 6 + i, repeat: Infinity, ease: "linear" }}
+                style={{ filter: "drop-shadow(0 0 1.5px var(--river-2))" }}
+              />
+            )}
           </g>
         ))}
 
@@ -87,17 +92,19 @@ export function DeltaScene({ className = "" }: { className?: string }) {
                 transition={{ delay: 0.2 + i * 0.12, duration: 0.7, ease: [0.22, 0.61, 0.36, 1] }}
                 style={{ opacity: 0.35 + lit * 0.6 }}
               />
-              <motion.circle
-                cx={u.x}
-                cy={u.y}
-                r={2.4}
-                fill="none"
-                stroke="var(--river-2)"
-                strokeWidth="0.5"
-                initial={{ scale: 1, opacity: 0.6 }}
-                animate={{ scale: 3, opacity: 0 }}
-                transition={{ duration: 3, repeat: Infinity, delay: i * 0.4, ease: "easeOut" }}
-              />
+              {!reduce && (
+                <motion.circle
+                  cx={u.x}
+                  cy={u.y}
+                  r={2.4}
+                  fill="none"
+                  stroke="var(--river-2)"
+                  strokeWidth="0.5"
+                  initial={{ scale: 1, opacity: 0.6 }}
+                  animate={{ scale: 3, opacity: 0 }}
+                  transition={{ duration: 3, repeat: Infinity, delay: i * 0.4, ease: "easeOut" }}
+                />
+              )}
             </g>
           );
         })}

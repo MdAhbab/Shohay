@@ -2,7 +2,8 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router";
 import { useEffect } from "react";
 import { Toaster } from "sonner";
 import { ShohayProvider, AppDataProvider } from "./lib/store";
-import { AuthProvider } from "./lib/auth";
+import { AuthProvider, RequireRole } from "./lib/auth";
+import { ErrorBoundary } from "./components/shohay/ErrorBoundary";
 import { Header } from "./components/shohay/Header";
 import { Footer } from "./components/shohay/Footer";
 import { DashboardLayout } from "./components/shohay/DashboardLayout";
@@ -46,6 +47,7 @@ function SiteLayout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <AppDataProvider>
       <ShohayProvider>
         <AuthProvider>
@@ -66,7 +68,7 @@ export default function App() {
               <Route path="/login" element={<SiteLayout><Login /></SiteLayout>} />
 
               {/* ---------- Donor dashboard ---------- */}
-              <Route element={<SiteLayout><DashboardLayout role="donor" title_bn="দাতা কনসোল" title_en="Donor console" nav={donorNav} /></SiteLayout>}>
+              <Route element={<RequireRole role="donor"><SiteLayout><DashboardLayout role="donor" title_bn="দাতা কনসোল" title_en="Donor console" nav={donorNav} /></SiteLayout></RequireRole>}>
                 <Route path="/account" element={<DonorOverview />} />
                 <Route path="/account/donations" element={<DonorDonations />} />
                 <Route path="/account/impact" element={<DonorImpact />} />
@@ -76,7 +78,7 @@ export default function App() {
               </Route>
 
               {/* ---------- Moderator dashboard ---------- */}
-              <Route element={<SiteLayout><DashboardLayout role="moderator" title_bn="মডারেটর কনসোল" title_en="Moderator console" nav={moderatorNav} /></SiteLayout>}>
+              <Route element={<RequireRole role="moderator"><SiteLayout><DashboardLayout role="moderator" title_bn="মডারেটর কনসোল" title_en="Moderator console" nav={moderatorNav} /></SiteLayout></RequireRole>}>
                 <Route path="/moderator" element={<ModeratorOverview />} />
                 <Route path="/moderator/needs" element={<ModeratorNeeds />} />
                 <Route path="/moderator/distributions" element={<ModeratorDistributions />} />
@@ -84,7 +86,7 @@ export default function App() {
               </Route>
 
               {/* ---------- Admin dashboard ---------- */}
-              <Route element={<SiteLayout><DashboardLayout role="admin" title_bn="প্রশাসক কনসোল" title_en="Admin console" nav={adminNav} /></SiteLayout>}>
+              <Route element={<RequireRole role="admin"><SiteLayout><DashboardLayout role="admin" title_bn="প্রশাসক কনসোল" title_en="Admin console" nav={adminNav} /></SiteLayout></RequireRole>}>
                 <Route path="/admin" element={<AdminOverview />} />
                 <Route path="/admin/campaigns" element={<AdminCampaigns />} />
                 <Route path="/admin/allocations" element={<AdminAllocations />} />
@@ -100,5 +102,6 @@ export default function App() {
         </AuthProvider>
       </ShohayProvider>
     </AppDataProvider>
+    </ErrorBoundary>
   );
 }

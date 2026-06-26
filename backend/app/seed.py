@@ -11,9 +11,17 @@ def init_db():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
-def seed_data():
-    db = SessionLocal()
-    
+def seed_if_empty(db):
+    """Populate demo data only when the DB has none — safe to call on every boot."""
+    if db.query(models.AdminUnit).first() is not None:
+        return
+    seed_data(db)
+
+def seed_data(db=None):
+    owns_session = db is None
+    if owns_session:
+        db = SessionLocal()
+
     divisions = [
       { "geocode": "10", "name_bn": "ঢাকা", "name_en": "Dhaka", "level": "division", "x": 52, "y": 52, "need": 2, "fulfillment": 71, "received": 1840, "beneficiaries": 142000 },
       { "geocode": "20", "name_bn": "চট্টগ্রাম", "name_en": "Chattogram", "level": "division", "x": 74, "y": 70, "need": 4, "fulfillment": 48, "received": 1320, "beneficiaries": 98000 },
@@ -167,7 +175,8 @@ def seed_data():
         db.add(models.ManagedUser(**mu))
         
     db.commit()
-    db.close()
+    if owns_session:
+        db.close()
 
 if __name__ == "__main__":
     init_db()

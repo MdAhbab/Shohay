@@ -97,8 +97,10 @@ export function NumberCounter({
   );
 }
 
+// Severity 1–5 maps onto the 5-step need-intensity scale (need-0 … need-4),
+// matching the map legend so colour reads consistently across surfaces.
 const SEVERITY = {
-  1: { bn: "নিম্ন", en: "Low", v: "--need-1" },
+  1: { bn: "নিম্ন", en: "Low", v: "--need-0" },
   2: { bn: "মাঝারি", en: "Moderate", v: "--need-1" },
   3: { bn: "উচ্চ", en: "High", v: "--need-2" },
   4: { bn: "গুরুতর", en: "Severe", v: "--need-3" },

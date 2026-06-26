@@ -196,11 +196,33 @@ export interface ManagedCampaign extends Campaign {
 
 export let managedCampaigns: ManagedCampaign[] = [];
 
+/** The API speaks snake_case; the UI reads a couple of camelCase fields. Normalise
+ *  at the boundary so a single source-of-truth shape flows through the app. */
+function normalizeTotals(raw: any): typeof nationalTotals {
+  if (!raw) return nationalTotals;
+  return {
+    crore: raw.crore ?? 0,
+    items: raw.items ?? 0,
+    upazilasReached: raw.upazilasReached ?? raw.upazilas_reached ?? 0,
+    upazilasTotal: raw.upazilasTotal ?? raw.upazilas_total ?? 0,
+    beneficiaries: raw.beneficiaries ?? 0,
+    donors: raw.donors ?? 0,
+  };
+}
+
+function normalizeManagedCampaign(c: any): ManagedCampaign {
+  return {
+    ...c,
+    needsOpen: c.needsOpen ?? c.needs_open ?? 0,
+    distributions: c.distributions ?? 0,
+  };
+}
+
 export function updateData(payload: any) {
   divisions = payload.divisions || [];
   upazilasByDivision = payload.upazilasByDivision || {};
   campaigns = payload.campaigns || [];
-  if (payload.nationalTotals) nationalTotals = payload.nationalTotals;
+  nationalTotals = normalizeTotals(payload.nationalTotals);
   needs = payload.needs || [];
   ledgerRows = payload.ledgerRows || [];
   proposedAllocations = payload.proposedAllocations || [];
@@ -209,5 +231,5 @@ export function updateData(payload: any) {
   if (payload.myImpact) myImpact = payload.myImpact;
   fieldLogs = payload.fieldLogs || [];
   managedUsers = payload.managedUsers || [];
-  managedCampaigns = payload.managedCampaigns || [];
+  managedCampaigns = (payload.managedCampaigns || []).map(normalizeManagedCampaign);
 }

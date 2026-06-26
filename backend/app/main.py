@@ -1,16 +1,38 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
+
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List
 
 from . import models, schemas
-from .database import engine, get_db
+from .database import engine, get_db, SessionLocal, Base
+from .seed import seed_if_empty
 
-app = FastAPI(title="Shohay API")
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create tables and seed demo data on first boot so a fresh clone works
+    # without a manual migration/seed step (the DB file is gitignored).
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        seed_if_empty(db)
+    finally:
+        db.close()
+    yield
+
+
+app = FastAPI(title="Shohay API", lifespan=lifespan)
+
+# Credentials + "*" origin is rejected by browsers and is a needless attack
+# surface; allow the local dev frontends explicitly. Override via env in prod.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
