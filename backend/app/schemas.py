@@ -159,6 +159,46 @@ class ManagedUserSchema(ManagedUserBase):
     class Config:
         from_attributes = True
 
+# ---------- write payloads ----------
+
+class DonationCreate(BaseModel):
+    kind: str                       # money | food | clothes | medicine | water | shelter | other
+    amount: Optional[float] = None  # taka, for money
+    qty: Optional[int] = None       # units, for goods
+    item: Optional[str] = None      # goods type label
+    channel: Optional[str] = None   # bkash | nagad | rocket | card | dropoff | pickup
+    target_geocode: Optional[str] = None
+    zakat: bool = False
+
+class DonationResult(BaseModel):
+    id: str
+    status: str
+    ts: str
+    hash: str
+    tracking_url: str
+
+class NeedCreate(BaseModel):
+    geocode: str
+    kind: str
+    quantity: int
+    severity: int
+
+class ProofStepSchema(BaseModel):
+    action: str
+    ref: str
+    amount: str
+    area_bn: str
+    area_en: str
+    ts: str
+    hash: str
+    prev: str
+
+class TrackResponse(BaseModel):
+    id: str
+    status: str
+    chain: List[ProofStepSchema]
+
+
 class InitializeResponse(BaseModel):
     divisions: List[AdminUnitSchema]
     upazilasByDivision: dict[str, List[AdminUnitSchema]]

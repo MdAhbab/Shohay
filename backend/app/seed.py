@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import engine, SessionLocal, Base
 from app import models
+from app.ledger import append_ledger
 
 def init_db():
     Base.metadata.drop_all(bind=engine)
@@ -122,15 +123,17 @@ def seed_data(db=None):
     for n in needs:
         db.add(models.Need(**n))
         
+    # Seed a genuine hash-linked chain (oldest first) so verify_chain passes and
+    # new donations extend a valid chain rather than a set of arbitrary hashes.
     ledger = [
-      { "id": "L-90213", "action": "distribute", "ref": "D-5521", "amount": "খাদ্য ×৮০ / Food ×80", "area_bn": "মনপুরা", "area_en": "Monpura", "ts": "২৭ জুন ১৬:২৫", "hash": "f23a91", "prev": "7be004" },
-      { "id": "L-90212", "action": "allocate", "ref": "A-3310", "amount": "৳ ১,২০,০০০", "area_bn": "মনপুরা", "area_en": "Monpura", "ts": "২৬ জুন ০৯:৪০", "hash": "7be004", "prev": "c4d277" },
-      { "id": "L-90211", "action": "receive", "ref": "BK-7741", "amount": "৳ ৫,০০,০০০", "area_bn": "—", "area_en": "—", "ts": "২৫ জুন ১০:১৩", "hash": "c4d277", "prev": "a91f30" },
-      { "id": "L-90210", "action": "pledge", "ref": "P-7740", "amount": "৳ ৫,০০,০০০", "area_bn": "ভোলা (নির্ধারিত)", "area_en": "Bhola (earmarked)", "ts": "২৫ জুন ১০:১২", "hash": "a91f30", "prev": "5d0c11" },
+      { "action": "pledge", "ref": "P-7740", "amount": "৳ ৫,০০,০০০", "area_bn": "ভোলা (নির্ধারিত)", "area_en": "Bhola (earmarked)", "ts": "২৫ জুন ১০:১২" },
+      { "action": "receive", "ref": "BK-7741", "amount": "৳ ৫,০০,০০০", "area_bn": "—", "area_en": "—", "ts": "২৫ জুন ১০:১৩" },
+      { "action": "allocate", "ref": "A-3310", "amount": "৳ ১,২০,০০০", "area_bn": "মনপুরা", "area_en": "Monpura", "ts": "২৬ জুন ০৯:৪০" },
+      { "action": "distribute", "ref": "D-5521", "amount": "খাদ্য ×৮০ / Food ×80", "area_bn": "মনপুরা", "area_en": "Monpura", "ts": "২৭ জুন ১৬:২৫" },
     ]
     for l in ledger:
-        db.add(models.LedgerRow(**l))
-        
+        append_ledger(db, **l)
+
     allocations = [
       { "id": "AP-01", "donation_bn": "খাদ্য প্যাকেজ ×২০০", "donation_en": "Food packs ×200", "need_bn": "মনপুরা — তীব্র খাদ্য সংকট", "need_en": "Monpura — acute food gap", "area_bn": "মনপুরা, ভোলা", "area_en": "Monpura, Bhola", "qty": 200, "distance": 12, "rationale_bn": "নিকটতম অপূর্ণ সর্বোচ্চ-তীব্রতা চাহিদা", "rationale_en": "Nearest unmet highest-severity need", "confidence": 0.92 },
       { "id": "AP-02", "donation_bn": "বিশুদ্ধ পানি ×৪০০০ লি", "donation_en": "Clean water ×4000 L", "need_bn": "চরফ্যাশন — পানি সংকট", "need_en": "Char Fasson — water gap", "area_bn": "চরফ্যাশন, ভোলা", "area_en": "Char Fasson, Bhola", "qty": 4000, "distance": 19, "rationale_bn": "type+proximity মিল; ০% কভারেজ এড়াতে", "rationale_en": "type+proximity match; avoids 0% coverage", "confidence": 0.86 },
