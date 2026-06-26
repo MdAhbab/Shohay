@@ -249,3 +249,23 @@
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
+
+/* MapLibre popup + zoom controls, themed to the palette (light + dark) */
+.shohay-map-popup .maplibregl-popup-content {
+  background: var(--bg-elev);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  font-size: 0.8rem;
+  padding: 0.5rem 0.7rem;
+}
+.shohay-map-popup .maplibregl-popup-tip {
+  border-top-color: var(--bg-elev);
+  border-bottom-color: var(--bg-elev);
+}
+.maplibregl-ctrl-group {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+}
+.maplibregl-ctrl-group button + button { border-top-color: var(--border); }
