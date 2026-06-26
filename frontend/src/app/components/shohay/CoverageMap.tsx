@@ -135,10 +135,22 @@ function CoverageSVG({
               transition={{ delay: i * 0.05, duration: 0.5, ease: [0.22, 0.61, 0.36, 1] }}
               onMouseEnter={() => setHover(u)}
               onMouseLeave={() => setHover(null)}
+              onFocus={() => setHover(u)}
+              onBlur={() => setHover(null)}
               onClick={() => {
                 onSelect?.(u);
                 if (drilldown && upazilasByDivision[u.geocode] && !drilled) setFocus(u.geocode);
               }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelect?.(u);
+                  if (drilldown && upazilasByDivision[u.geocode] && !drilled) setFocus(u.geocode);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`${t(u.name_bn, u.name_en)} — ${t("পূরণ", "fulfillment")} ${u.fulfillment}%`}
               style={{ cursor: "pointer" }}
             >
               <circle cx={u.x} cy={u.y} r={drilled ? 5.5 : 6.5} fill={colorFor(u, layer)} stroke={isSel ? "var(--gold)" : "var(--bg-elev)"} strokeWidth={isSel ? 1.2 : 0.6} />

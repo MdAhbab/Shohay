@@ -8,8 +8,9 @@
 > map.
 
 **Type:** standalone national civic platform.
-**Stack:** FastAPI · SQLite (→ Postgres + PostGIS) · React + Vite · Three.js · GSAP · Lenis ·
-MapLibre. **Bengali-first**, low-bandwidth, SMS/USSD fallback, accessibility-grade.
+**Stack:** FastAPI · SQLite (→ Postgres + PostGIS) · React + Vite · Tailwind · MapLibre GL ·
+Motion. **Bengali-first**, low-bandwidth (two-tier rich/lite rendering), SMS/USSD fallback,
+accessibility-grade.
 
 ---
 
@@ -200,11 +201,19 @@ Full spec in [`AGENTS.md`](AGENTS.md). Four+ agents:
 - **M6** **Access layer**: Bengali polish, SMS/USSD, voice, PWA offline, "Adopt an Upazila."
 - **M7** Security & privacy review, load test, pilot in 1–2 districts, national rollout.
 
-## 9. Run (once implemented)
+## 9. Run
 ```bash
-cd backend && uv sync && uvicorn app.main:app --reload     # http://localhost:8000/docs
-cd frontend && npm install && npm run dev                  # http://localhost:5173
+# One command (creates the venv, installs deps, starts both servers):
+python run.py
+
+# …or run the two tiers manually:
+cd backend && python -m venv venv && venv/Scripts/pip install fastapi uvicorn sqlalchemy pydantic
+venv/Scripts/python -m uvicorn app.main:app --reload     # http://localhost:8000/docs
+cd frontend && npm install && npm run dev                # http://localhost:5173
 ```
+The API creates its SQLite tables and seeds demo data on first boot, so there is no
+separate migration/seed step. `npm run typecheck` runs the TypeScript checker; `npm run
+build` produces the production bundle.
 
 See [`DESIGN-INSTRUCTIONS.md`](DESIGN-INSTRUCTIONS.md) and [`AGENTS.md`](AGENTS.md).
 

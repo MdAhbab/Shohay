@@ -90,8 +90,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   if (!ready) {
     return (
-      <div className="flex h-screen items-center justify-center p-4 text-center">
-        <div className="animate-pulse text-ink-dim">Loading backend data...</div>
+      <div className="flex h-screen flex-col items-center justify-center gap-3 p-4 text-center">
+        <span className="h-8 w-8 animate-pulse rounded-full border-2 border-river/40 border-t-river" aria-hidden />
+        <div className="text-ink-dim">তথ্য লোড হচ্ছে · Loading…</div>
       </div>
     );
   }
