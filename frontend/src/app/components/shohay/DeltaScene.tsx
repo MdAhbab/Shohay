@@ -1,6 +1,5 @@
 import { motion, useReducedMotion } from "motion/react";
-import { useShohay } from "../../lib/store";
-import { divisions } from "../../lib/data";
+import { useShohay, useData } from "../../lib/store";
 
 // Stylized river/delta network of Bangladesh. Not a literal map — a calm,
 // legible metaphor: aid flows along the rivers and units light up by coverage.
@@ -18,6 +17,7 @@ const FADE_MASK =
 
 export function DeltaScene({ className = "" }: { className?: string }) {
   const { theme } = useShohay();
+  const { divisions } = useData();
   // Lite tier: honour the OS "reduce motion" setting — render the calm final
   // state instead of the looping river/ping animations (battery + low-end cost).
   const reduce = useReducedMotion();

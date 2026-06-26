@@ -3,8 +3,7 @@ import { Link } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Banknote, Boxes, Check, MapPin, QrCode, Smartphone, CreditCard, Truck, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
-import { useT, useShohay, toBnDigits } from "../lib/store";
-import { divisions, upazilasByDivision } from "../lib/data";
+import { useT, useShohay, toBnDigits, useData, useDataActions } from "../lib/store";
 import { Eyebrow } from "../components/shohay/primitives";
 import { postDonation } from "../lib/api";
 
@@ -28,6 +27,8 @@ const GOODS = [
 export function Donate() {
   const t = useT();
   const { bnNumerals, lang } = useShohay();
+  const { divisions } = useData();
+  const { addDonation } = useDataActions();
   const [step, setStep] = useState(0);
   const [kind, setKind] = useState<Kind>("money");
   const [amount, setAmount] = useState(2500);
@@ -50,6 +51,21 @@ export function Donate() {
 
   const targetGeocode = earmark === "pick" ? (upazila || division || undefined) : undefined;
 
+  const recordLocally = (id: string) => {
+    const area = divisions.find((d) => d.geocode === (upazila || division));
+    addDonation({
+      id,
+      date: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+      kind: kind === "money" ? "money" : good,
+      summary_bn: kind === "money" ? `৳ ${fmt(amount)}` : `${t(GOODS.find((g) => g.id === good)!.bn, "")} ×${fmt(qty)}`,
+      summary_en: kind === "money" ? `৳ ${amount.toLocaleString("en-IN")}` : `${GOODS.find((g) => g.id === good)!.en} ×${qty}`,
+      area_bn: earmark === "most" ? "যেখানে প্রয়োজন" : area?.name_bn ?? "—",
+      area_en: earmark === "most" ? "Where needed" : area?.name_en ?? "—",
+      campaign_bn: "—", campaign_en: "—",
+      status: "pledged", zakat: kind === "money" ? zakat : false,
+    });
+  };
+
   const confirm = async () => {
     if (submitting) return;
     setSubmitting(true);
@@ -61,9 +77,11 @@ export function Donate() {
       );
       // Use the server's real, ledger-backed id so the tracking link resolves.
       setDonationId(result.id);
+      recordLocally(result.id);
       toast.success(t("দান নিশ্চিত হয়েছে — খতিয়ানে যুক্ত হয়েছে", "Donation confirmed — recorded in the ledger"));
     } catch {
       // Offline/demo: keep the optimistic local id so the flow still completes.
+      recordLocally(donationId);
       toast.success(t("দান নিশ্চিত হয়েছে — ট্র্যাকিং লিংক তৈরি", "Donation confirmed — tracking link created"));
     } finally {
       setSubmitting(false);
@@ -248,6 +266,7 @@ export function Donate() {
 
 function EarmarkPicker({ earmark, setEarmark, division, setDivision, upazila, setUpazila }: any) {
   const t = useT();
+  const { divisions, upazilasByDivision } = useData();
   const ups = division ? upazilasByDivision[division] ?? [] : [];
   return (
     <div>

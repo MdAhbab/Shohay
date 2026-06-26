@@ -3,11 +3,11 @@ import { Link } from "react-router";
 import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip, CartesianGrid } from "recharts";
 import { Play, FileText } from "lucide-react";
 import { LogIn } from "lucide-react";
-import { useT, useShohay, toBnDigits } from "../lib/store";
+import { useT, useShohay, toBnDigits, useData } from "../lib/store";
 import { useAuth, HOME_FOR } from "../lib/auth";
 import { CoverageMap } from "../components/shohay/CoverageMap";
 import { Eyebrow, NumberCounter } from "../components/shohay/primitives";
-import { divisions, nationalTotals, type Unit } from "../lib/data";
+import { type Unit } from "../lib/data";
 
 const trend = [
   { d: "১", recv: 8, dist: 4 },
@@ -22,7 +22,8 @@ export function Dashboard() {
   const t = useT();
   const { lang } = useShohay();
   const { user } = useAuth();
-  const [sel, setSel] = useState<Unit | null>(divisions[1]);
+  const { divisions, nationalTotals } = useData();
+  const [sel, setSel] = useState<Unit | null>(divisions[1] ?? null);
   const [time, setTime] = useState(100);
 
   return (

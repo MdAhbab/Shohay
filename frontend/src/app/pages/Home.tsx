@@ -1,13 +1,13 @@
 import { Link } from "react-router";
 import { motion } from "motion/react";
 import { ArrowRight, HandCoins, Map as MapIcon, ShieldCheck, Waves } from "lucide-react";
-import { useT } from "../lib/store";
+import { useT, useData } from "../lib/store";
 import { DeltaScene } from "../components/shohay/DeltaScene";
 import { CoverageMap } from "../components/shohay/CoverageMap";
 import { ProofChain } from "../components/shohay/ProofChain";
 import { NumberCounter, Eyebrow, NeedSeverityTag } from "../components/shohay/primitives";
 import { ImageWithFallback } from "../components/custom/ImageWithFallback";
-import { campaigns, nationalTotals, makeProofChain } from "../lib/data";
+import { makeProofChain } from "../lib/data";
 
 const rise = {
   initial: { opacity: 0, y: 24 },
@@ -18,6 +18,7 @@ const rise = {
 
 export function Home() {
   const t = useT();
+  const { campaigns, nationalTotals } = useData();
 
   return (
     <div>

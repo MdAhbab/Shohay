@@ -2,9 +2,8 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { Search, Download, Link2, CheckCircle2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { useT, toBnDigits } from "../lib/store";
+import { useT, toBnDigits, useData } from "../lib/store";
 import { Eyebrow } from "../components/shohay/primitives";
-import { ledgerRows, nationalTotals } from "../lib/data";
 
 const ACTION_LABEL = {
   pledge: { bn: "প্রতিশ্রুতি", en: "Pledge", c: "var(--ink-dim)" },
@@ -15,6 +14,7 @@ const ACTION_LABEL = {
 
 export function Ledger() {
   const t = useT();
+  const { ledgerRows, nationalTotals } = useData();
   const [q, setQ] = useState("");
 
   const recon = [

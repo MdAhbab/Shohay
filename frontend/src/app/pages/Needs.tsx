@@ -2,9 +2,8 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { Plus, Droplet, Utensils, Pill, Home as HomeIcon, Shirt, MapPin } from "lucide-react";
 import { toast } from "sonner";
-import { useT, toBnDigits } from "../lib/store";
+import { useT, toBnDigits, useData, useDataActions } from "../lib/store";
 import { Eyebrow, NeedSeverityTag, VerifiedSeal } from "../components/shohay/primitives";
-import { needs, divisions, type Need } from "../lib/data";
 import { postNeed } from "../lib/api";
 
 const KIND_ICON = { food: Utensils, water: Droplet, medicine: Pill, shelter: HomeIcon, clothes: Shirt } as const;
@@ -15,15 +14,14 @@ const KIND_LABEL = {
 
 export function Needs() {
   const t = useT();
+  const { needs, divisions } = useData();
+  const { addNeed } = useDataActions();
   const [form, setForm] = useState(false);
   const [kind, setKind] = useState<keyof typeof KIND_LABEL>("food");
   const [geocode, setGeocode] = useState(divisions[0]?.geocode ?? "");
   const [quantity, setQuantity] = useState(500);
   const [severity, setSeverity] = useState(4);
   const [submitting, setSubmitting] = useState(false);
-  // Locally-added needs render immediately; the seed list stays as the baseline.
-  const [added, setAdded] = useState<Need[]>([]);
-  const allNeeds = [...added, ...needs];
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,12 +30,11 @@ export function Needs() {
     const area = divisions.find((d) => d.geocode === geocode);
     try {
       const res = await postNeed({ geocode, kind, quantity, severity });
-      setAdded((prev) => [
-        { id: res.id, geocode, area_bn: area?.name_bn ?? "—", area_en: area?.name_en ?? "—", kind, quantity, severity, status: "open", verified: res.verified },
-        ...prev,
-      ]);
+      // Add to the shared store so it appears here and updates moderator badges.
+      addNeed({ id: res.id, geocode, area_bn: area?.name_bn ?? "—", area_en: area?.name_en ?? "—", kind, quantity, severity, status: "open", verified: res.verified });
       toast.success(t("চাহিদা জমা হয়েছে — অ্যাডমিন যাচাইয়ের অপেক্ষায়", "Need submitted — pending admin verification"));
     } catch {
+      addNeed({ id: `N-local-${Date.now()}`, geocode, area_bn: area?.name_bn ?? "—", area_en: area?.name_en ?? "—", kind, quantity, severity, status: "open", verified: false });
       toast.success(t("চাহিদা জমা হয়েছে — অ্যাডমিন যাচাইয়ের অপেক্ষায়", "Need submitted — pending admin verification"));
     } finally {
       setSubmitting(false);
@@ -90,7 +87,7 @@ export function Needs() {
       )}
 
       <div className="mt-8 grid gap-4">
-        {allNeeds.map((n, i) => {
+        {needs.map((n, i) => {
           const Icon = KIND_ICON[n.kind as keyof typeof KIND_ICON] ?? Droplet;
           const label = KIND_LABEL[n.kind as keyof typeof KIND_LABEL] ?? { bn: n.kind, en: n.kind };
           return (

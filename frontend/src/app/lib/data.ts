@@ -1,5 +1,6 @@
-// Data structs and mutable stores for Shohay.
-// Initially empty; populated by AppDataProvider on load.
+// Domain types and the normalized AppData shape.
+// Live data is held in React state by the data store (see store.tsx); this file
+// owns the types, a couple of pure helpers, and the API→UI normaliser.
 
 export interface Unit {
   geocode: string;
@@ -13,9 +14,6 @@ export interface Unit {
   received: number;
   beneficiaries: number;
 }
-
-export let divisions: Unit[] = [];
-export let upazilasByDivision: Record<string, Unit[]> = {};
 
 export interface Campaign {
   id: string;
@@ -31,16 +29,14 @@ export interface Campaign {
   image: string;
 }
 
-export let campaigns: Campaign[] = [];
-
-export let nationalTotals = {
-  crore: 0,
-  items: 0,
-  upazilasReached: 0,
-  upazilasTotal: 0,
-  beneficiaries: 0,
-  donors: 0,
-};
+export interface NationalTotals {
+  crore: number;
+  items: number;
+  upazilasReached: number;
+  upazilasTotal: number;
+  beneficiaries: number;
+  donors: number;
+}
 
 export interface ProofStep {
   key: "pledged" | "received" | "allocated" | "distributed";
@@ -90,8 +86,6 @@ export interface Need {
   verified: boolean;
 }
 
-export let needs: Need[] = [];
-
 export interface LedgerRow {
   id: string;
   action: "pledge" | "receive" | "allocate" | "distribute" | string;
@@ -103,8 +97,6 @@ export interface LedgerRow {
   hash: string;
   prev: string;
 }
-
-export let ledgerRows: LedgerRow[] = [];
 
 export interface Allocation {
   id: string;
@@ -121,8 +113,6 @@ export interface Allocation {
   confidence: number;
 }
 
-export let proposedAllocations: Allocation[] = [];
-
 export interface Anomaly {
   id: string;
   type_bn: string;
@@ -132,8 +122,6 @@ export interface Anomaly {
   explanation_bn: string;
   explanation_en: string;
 }
-
-export let anomalies: Anomaly[] = [];
 
 export interface MyDonation {
   id: string;
@@ -149,16 +137,14 @@ export interface MyDonation {
   zakat: boolean;
 }
 
-export let myDonations: MyDonation[] = [];
-
-export let myImpact = {
-  totalTaka: 0,
-  donations: 0,
-  families: 0,
-  meals: 0,
-  upazilas: 0,
-  zakatTaka: 0,
-};
+export interface MyImpact {
+  totalTaka: number;
+  donations: number;
+  families: number;
+  meals: number;
+  upazilas: number;
+  zakatTaka: number;
+}
 
 export interface FieldLog {
   id: string;
@@ -175,8 +161,6 @@ export interface FieldLog {
   status: "pending" | "verified" | "flagged" | string;
 }
 
-export let fieldLogs: FieldLog[] = [];
-
 export interface ManagedUser {
   id: string;
   name_bn: string;
@@ -187,19 +171,47 @@ export interface ManagedUser {
   status: "active" | "pending" | "suspended" | string;
 }
 
-export let managedUsers: ManagedUser[] = [];
-
 export interface ManagedCampaign extends Campaign {
   needsOpen: number;
   distributions: number;
 }
 
-export let managedCampaigns: ManagedCampaign[] = [];
+export interface AppData {
+  divisions: Unit[];
+  upazilasByDivision: Record<string, Unit[]>;
+  campaigns: Campaign[];
+  nationalTotals: NationalTotals;
+  needs: Need[];
+  ledgerRows: LedgerRow[];
+  proposedAllocations: Allocation[];
+  anomalies: Anomaly[];
+  myDonations: MyDonation[];
+  myImpact: MyImpact;
+  fieldLogs: FieldLog[];
+  managedUsers: ManagedUser[];
+  managedCampaigns: ManagedCampaign[];
+}
 
-/** The API speaks snake_case; the UI reads a couple of camelCase fields. Normalise
- *  at the boundary so a single source-of-truth shape flows through the app. */
-function normalizeTotals(raw: any): typeof nationalTotals {
-  if (!raw) return nationalTotals;
+export const EMPTY_DATA: AppData = {
+  divisions: [],
+  upazilasByDivision: {},
+  campaigns: [],
+  nationalTotals: { crore: 0, items: 0, upazilasReached: 0, upazilasTotal: 0, beneficiaries: 0, donors: 0 },
+  needs: [],
+  ledgerRows: [],
+  proposedAllocations: [],
+  anomalies: [],
+  myDonations: [],
+  myImpact: { totalTaka: 0, donations: 0, families: 0, meals: 0, upazilas: 0, zakatTaka: 0 },
+  fieldLogs: [],
+  managedUsers: [],
+  managedCampaigns: [],
+};
+
+// The API speaks snake_case; the UI reads a couple of camelCase fields. Normalise
+// at the boundary so a single source-of-truth shape flows through the app.
+function normalizeTotals(raw: any): NationalTotals {
+  if (!raw) return EMPTY_DATA.nationalTotals;
   return {
     crore: raw.crore ?? 0,
     items: raw.items ?? 0,
@@ -211,25 +223,23 @@ function normalizeTotals(raw: any): typeof nationalTotals {
 }
 
 function normalizeManagedCampaign(c: any): ManagedCampaign {
-  return {
-    ...c,
-    needsOpen: c.needsOpen ?? c.needs_open ?? 0,
-    distributions: c.distributions ?? 0,
-  };
+  return { ...c, needsOpen: c.needsOpen ?? c.needs_open ?? 0, distributions: c.distributions ?? 0 };
 }
 
-export function updateData(payload: any) {
-  divisions = payload.divisions || [];
-  upazilasByDivision = payload.upazilasByDivision || {};
-  campaigns = payload.campaigns || [];
-  nationalTotals = normalizeTotals(payload.nationalTotals);
-  needs = payload.needs || [];
-  ledgerRows = payload.ledgerRows || [];
-  proposedAllocations = payload.proposedAllocations || [];
-  anomalies = payload.anomalies || [];
-  myDonations = payload.myDonations || [];
-  if (payload.myImpact) myImpact = payload.myImpact;
-  fieldLogs = payload.fieldLogs || [];
-  managedUsers = payload.managedUsers || [];
-  managedCampaigns = (payload.managedCampaigns || []).map(normalizeManagedCampaign);
+export function normalizeData(payload: any): AppData {
+  return {
+    divisions: payload.divisions || [],
+    upazilasByDivision: payload.upazilasByDivision || {},
+    campaigns: payload.campaigns || [],
+    nationalTotals: normalizeTotals(payload.nationalTotals),
+    needs: payload.needs || [],
+    ledgerRows: payload.ledgerRows || [],
+    proposedAllocations: payload.proposedAllocations || [],
+    anomalies: payload.anomalies || [],
+    myDonations: payload.myDonations || [],
+    myImpact: payload.myImpact || EMPTY_DATA.myImpact,
+    fieldLogs: payload.fieldLogs || [],
+    managedCampaigns: (payload.managedCampaigns || []).map(normalizeManagedCampaign),
+    managedUsers: payload.managedUsers || [],
+  };
 }

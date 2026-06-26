@@ -1,7 +1,8 @@
 import { useState, type ComponentType } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router";
 import { Menu, X, LogOut, ExternalLink, ChevronLeft } from "lucide-react";
-import { useT } from "../../lib/store";
+import { useT, useData } from "../../lib/store";
+import { type AppData } from "../../lib/data";
 import { useAuth, ROLE_LABEL, HOME_FOR, type Role } from "../../lib/auth";
 
 export interface NavItem {
@@ -22,12 +23,14 @@ export function DashboardLayout({
   role: Role;
   title_bn: string;
   title_en: string;
-  nav: NavItem[];
+  nav: (d: AppData) => NavItem[];
 }) {
   const t = useT();
+  const data = useData();
   const { user, logout } = useAuth();
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
+  const navItems = nav(data);
 
   // Role guard — wrong/no role gets redirected.
   if (!user) return <Navigate to="/login" replace state={{ from: pathname }} />;
@@ -40,7 +43,7 @@ export function DashboardLayout({
         <div className="mt-1" style={{ fontFamily: "var(--font-bn-serif)" }}>{t(title_bn, title_en)}</div>
       </div>
       <nav className="flex-1 space-y-1 px-3">
-        {nav.map((n) => {
+        {navItems.map((n) => {
           const Icon = n.icon;
           return (
             <NavLink

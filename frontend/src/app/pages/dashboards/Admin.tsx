@@ -7,12 +7,9 @@ import {
   Check, X, ChevronRight, AlertTriangle, MapPinned, HandCoins, Boxes, UserPlus, Search,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useT, toBnDigits } from "../../lib/store";
+import { useT, toBnDigits, useData } from "../../lib/store";
 import { PageHead } from "../../components/shohay/DashboardLayout";
 import { StatCard, NeedSeverityTag } from "../../components/shohay/primitives";
-import {
-  nationalTotals, managedCampaigns, proposedAllocations, needs, anomalies, managedUsers,
-} from "../../lib/data";
 
 
 const trend = [
@@ -22,6 +19,7 @@ const trend = [
 
 export function AdminOverview() {
   const t = useT();
+  const { nationalTotals, proposedAllocations, needs, anomalies, managedUsers } = useData();
   return (
     <div>
       <PageHead bn="জাতীয় সারসংক্ষেপ" en="National overview" sub_bn="a2i · দুর্যোগ ব্যবস্থাপনা ও ত্রাণ" sub_en="a2i · Disaster Management & Relief"
@@ -72,6 +70,7 @@ function QueueRow({ to, bn, en, n }: { to: string; bn: string; en: string; n: nu
 
 export function AdminCampaigns() {
   const t = useT();
+  const { managedCampaigns } = useData();
   return (
     <div>
       <PageHead bn="অভিযান ব্যবস্থাপনা" en="Campaign management" sub_bn="চলমান দুর্যোগ অভিযান" sub_en="Active disaster campaigns"
@@ -115,6 +114,7 @@ function Mini({ bn, en, v }: { bn: string; en: string; v: string }) {
 
 export function AdminAllocations() {
   const t = useT();
+  const { proposedAllocations } = useData();
   return (
     <div>
       <PageHead bn="বরাদ্দ অনুমোদন" en="Allocations" sub_bn="বরাদ্দ-অপ্টিমাইজার এজেন্টের প্রস্তাব" sub_en="Allocation-Optimizer agent proposals" />
@@ -149,6 +149,7 @@ export function AdminAllocations() {
 
 export function AdminNeeds() {
   const t = useT();
+  const { needs } = useData();
   const [list, setList] = useState(needs);
   return (
     <div>
@@ -171,6 +172,7 @@ export function AdminNeeds() {
 
 export function AdminAnomalies() {
   const t = useT();
+  const { anomalies } = useData();
   return (
     <div>
       <PageHead bn="অসঙ্গতি ও জালিয়াতি" en="Anomalies & fraud" sub_bn="ট্রান্সপারেন্সি এজেন্টের ফ্ল্যাগ" sub_en="Transparency-agent flags" />
@@ -203,6 +205,7 @@ const ROLE_BADGE = {
 
 export function AdminUsers() {
   const t = useT();
+  const { managedUsers } = useData();
   const [users, setUsers] = useState(managedUsers);
   const [q, setQ] = useState("");
   const filtered = users.filter((u) => (t(u.name_bn, u.name_en) + u.id).toLowerCase().includes(q.toLowerCase()));

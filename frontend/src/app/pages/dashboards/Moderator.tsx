@@ -5,14 +5,15 @@ import {
   AlertTriangle, ListChecks, Clock,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useT, toBnDigits } from "../../lib/store";
+import { useT, toBnDigits, useData } from "../../lib/store";
 import { PageHead } from "../../components/shohay/DashboardLayout";
 import { StatCard, NeedSeverityTag } from "../../components/shohay/primitives";
 import { ImageWithFallback } from "../../components/custom/ImageWithFallback";
-import { needs, fieldLogs, anomalies, type FieldLog } from "../../lib/data";
+import { type FieldLog } from "../../lib/data";
 
 export function ModeratorOverview() {
   const t = useT();
+  const { needs, fieldLogs, anomalies } = useData();
   const pendingNeeds = needs.filter((n) => !n.verified).length;
   const pendingLogs = fieldLogs.filter((f) => f.status === "pending").length;
   return (
@@ -57,6 +58,7 @@ export function ModeratorOverview() {
 
 export function ModeratorNeeds() {
   const t = useT();
+  const { needs } = useData();
   const [list, setList] = useState(needs);
   const act = (id: string, verified: boolean) => {
     setList((l) => l.map((n) => (n.id === id ? { ...n, verified } : n)));
@@ -95,6 +97,7 @@ export function ModeratorNeeds() {
 
 export function ModeratorDistributions() {
   const t = useT();
+  const { fieldLogs } = useData();
   const [logs, setLogs] = useState(fieldLogs);
   const act = (id: string, status: FieldLog["status"]) => {
     setLogs((l) => l.map((f) => (f.id === id ? { ...f, status } : f)));
@@ -140,6 +143,7 @@ export function ModeratorDistributions() {
 
 export function ModeratorAnomalies() {
   const t = useT();
+  const { anomalies } = useData();
   return (
     <div>
       <PageHead bn="অসঙ্গতি সারি" en="Anomaly queue" sub_bn="পরামর্শমূলক ফ্ল্যাগ — মানবিক পর্যালোচনার জন্য" sub_en="Advisory flags — for human review" />

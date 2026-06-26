@@ -2,12 +2,12 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { QrCode, Building2, Globe2, Heart, Check } from "lucide-react";
 import { toast } from "sonner";
-import { useT, toBnDigits } from "../lib/store";
+import { useT, toBnDigits, useData } from "../lib/store";
 import { Eyebrow, NumberCounter, VerifiedSeal } from "../components/shohay/primitives";
-import { upazilasByDivision } from "../lib/data";
 
 export function Adopt() {
   const t = useT();
+  const { upazilasByDivision } = useData();
   const allUpazilas = Object.values(upazilasByDivision).flat();
   const [picked, setPicked] = useState(allUpazilas[0]);
 

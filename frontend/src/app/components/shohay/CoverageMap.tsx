@@ -1,7 +1,7 @@
 import { useState, lazy, Suspense } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { useT, toBnDigits } from "../../lib/store";
-import { divisions, upazilasByDivision, type Unit } from "../../lib/data";
+import { useT, toBnDigits, useData } from "../../lib/store";
+import { type Unit } from "../../lib/data";
 
 type Layer = "need" | "fulfillment" | "received";
 
@@ -41,6 +41,7 @@ export function CoverageMap({
 }) {
   const t = useT();
   const reduce = useReducedMotion();
+  const { divisions } = useData();
   const [layer, setLayer] = useState<Layer>("need");
   const useSvg = lite || reduce;
 
@@ -75,7 +76,7 @@ export function CoverageMap({
           <CoverageSVG layer={layer} selected={selected} onSelect={onSelect} drilldown={drilldown} />
         ) : (
           <Suspense fallback={<CoverageSVG layer={layer} selected={selected} onSelect={onSelect} drilldown={drilldown} />}>
-            <MapLibreCoverage layer={layer} selected={selected} onSelect={onSelect} />
+            <MapLibreCoverage layer={layer} units={divisions} selected={selected} onSelect={onSelect} />
           </Suspense>
         )}
       </div>
@@ -117,6 +118,7 @@ function CoverageSVG({
   drilldown: boolean;
 }) {
   const t = useT();
+  const { divisions, upazilasByDivision } = useData();
   const [focus, setFocus] = useState<string | null>(null);
   const [hover, setHover] = useState<Unit | null>(null);
   const drilled = focus ? upazilasByDivision[focus] : null;

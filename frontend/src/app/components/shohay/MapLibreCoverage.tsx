@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { type ExpressionSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { divisions, type Unit } from "../../lib/data";
+import { type Unit } from "../../lib/data";
 
 export type Layer = "need" | "fulfillment" | "received";
 
@@ -43,18 +43,20 @@ function colorForUnit(u: Unit, layer: Layer): string {
 }
 
 /** Per-division fill colour as a data-driven match on the `geocode` property. */
-function fillExpression(layer: Layer): ExpressionSpecification {
+function fillExpression(layer: Layer, units: Unit[]): ExpressionSpecification {
   const cases: (string | string[])[] = [];
-  for (const u of divisions) cases.push(u.geocode, colorForUnit(u, layer));
+  for (const u of units) cases.push(u.geocode, colorForUnit(u, layer));
   return ["match", ["get", "geocode"], ...cases, cssVar("--need-0")] as unknown as ExpressionSpecification;
 }
 
 export default function MapLibreCoverage({
   layer,
+  units,
   selected,
   onSelect,
 }: {
   layer: Layer;
+  units: Unit[];
   selected?: Unit | null;
   onSelect?: (u: Unit) => void;
 }) {
@@ -89,12 +91,12 @@ export default function MapLibreCoverage({
 
     map.on("load", () => {
       map.addSource("divisions", { type: "geojson", data: GEOJSON_URL, promoteId: "geocode" });
-      map.addLayer({ id: "div-fill", type: "fill", source: "divisions", paint: { "fill-color": fillExpression(layer), "fill-opacity": 0.82 } });
+      map.addLayer({ id: "div-fill", type: "fill", source: "divisions", paint: { "fill-color": fillExpression(layer, units), "fill-opacity": 0.82 } });
       map.addLayer({ id: "div-line", type: "line", source: "divisions", paint: { "line-color": cssVar("--bg-elev"), "line-width": 0.8 } });
       map.addLayer({ id: "div-sel", type: "line", source: "divisions", paint: { "line-color": cssVar("--gold"), "line-width": 2.4 }, filter: ["==", ["get", "geocode"], selected?.geocode ?? "__none__"] });
       loadedRef.current = true;
 
-      const byGeo = new Map(divisions.map((u) => [u.geocode, u]));
+      const byGeo = new Map(units.map((u) => [u.geocode, u]));
       map.on("click", "div-fill", (e) => {
         const gc = e.features?.[0]?.properties?.geocode as string | undefined;
         const u = gc ? byGeo.get(gc) : undefined;
@@ -129,7 +131,7 @@ export default function MapLibreCoverage({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !loadedRef.current) return;
-    map.setPaintProperty("div-fill", "fill-color", fillExpression(layer));
+    map.setPaintProperty("div-fill", "fill-color", fillExpression(layer, units));
     map.setPaintProperty("div-line", "line-color", cssVar("--bg-elev"));
     map.setPaintProperty("div-sel", "line-color", cssVar("--gold"));
     map.setPaintProperty("bg", "background-color", cssVar("--panel"));

@@ -5,11 +5,11 @@ import {
   Users, Utensils, Droplet, ArrowRight, Download, Building2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useT, useShohay, toBnDigits } from "../../lib/store";
+import { useT, useShohay, toBnDigits, useData } from "../../lib/store";
 import { PageHead } from "../../components/shohay/DashboardLayout";
 import { StatCard, NumberCounter, VerifiedSeal } from "../../components/shohay/primitives";
 import { ProofChain } from "../../components/shohay/ProofChain";
-import { myDonations, myImpact, makeProofChain, upazilasByDivision, type MyDonation } from "../../lib/data";
+import { makeProofChain, type MyDonation } from "../../lib/data";
 
 const STATUS = {
   pledged: { bn: "প্রতিশ্রুত", en: "Pledged", c: "var(--ink-dim)" },
@@ -30,6 +30,7 @@ function StatusPill({ s }: { s: MyDonation["status"] }) {
 
 export function DonorOverview() {
   const t = useT();
+  const { myDonations, myImpact } = useData();
   return (
     <div>
       <PageHead bn="স্বাগতম, রওশন আরা" en="Welcome, Roushan Ara" sub_bn="আপনার দান ও তার প্রভাবের সারসংক্ষেপ" sub_en="A summary of your giving and its impact" />
@@ -71,6 +72,7 @@ export function DonorOverview() {
 
 export function DonorDonations() {
   const t = useT();
+  const { myDonations } = useData();
   return (
     <div>
       <PageHead bn="আমার দান" en="My donations" sub_bn="প্রতিটি দানের যাচাইযোগ্য অবস্থা" sub_en="Verifiable status of every donation"
@@ -103,6 +105,7 @@ export function DonorDonations() {
 
 export function DonorImpact() {
   const t = useT();
+  const { myImpact } = useData();
   return (
     <div>
       <PageHead bn="আমার প্রভাব" en="My impact" sub_bn="আপনার অবদান কোথায় পৌঁছেছে" sub_en="Where your contribution landed" />
@@ -149,7 +152,8 @@ export function DonorImpact() {
 
 export function DonorAdopted() {
   const t = useT();
-  const adopted = upazilasByDivision["50"];
+  const { upazilasByDivision } = useData();
+  const adopted = upazilasByDivision["50"] ?? [];
   return (
     <div>
       <PageHead bn="দত্তক উপজেলা" en="Adopted upazilas" sub_bn="আপনি যেসব উপজেলার পাশে দাঁড়িয়েছেন" sub_en="Upazilas you stand beside"
@@ -177,6 +181,7 @@ export function DonorAdopted() {
 
 export function DonorReceipts() {
   const t = useT();
+  const { myDonations, myImpact } = useData();
   return (
     <div>
       <PageHead bn="রসিদ ও যাকাত" en="Receipts & zakat" sub_bn="ডাউনলোডযোগ্য রসিদ ও যাকাত সারসংক্ষেপ" sub_en="Downloadable receipts & zakat summary" />

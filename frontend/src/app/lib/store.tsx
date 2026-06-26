@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { fetchInitialData } from "./api";
-import { updateData } from "./data";
+import { EMPTY_DATA, normalizeData, type AppData, type Need, type FieldLog, type MyDonation } from "./data";
 import FALLBACK_DATA from "./fallback-data";
 type Lang = "bn" | "en";
 type Theme = "light" | "dark";
@@ -69,24 +69,43 @@ export function useNum() {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Reactive domain-data store. Data lives in React state (no module-level lets),
+// so adding a need / field log / donation re-renders every consumer.
+// ---------------------------------------------------------------------------
+
+interface DataState {
+  data: AppData;
+  addNeed: (n: Need) => void;
+  addFieldLog: (f: FieldLog) => void;
+  addDonation: (d: MyDonation) => void;
+}
+
+const DataCtx = createContext<DataState | null>(null);
+
 export function AppDataProvider({ children }: { children: ReactNode }) {
+  const [data, setData] = useState<AppData>(EMPTY_DATA);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    let alive = true;
     fetchInitialData()
-      .then((data) => {
-        updateData(data);
-        setReady(true);
-      })
+      .then((payload) => alive && setData(normalizeData(payload)))
       .catch((err) => {
-        // No backend (e.g. the public Vercel demo): fall back to a baked-in
-        // snapshot of /api/data so the dashboards still render with real data.
+        // No backend (e.g. a static demo): fall back to a baked-in snapshot of
+        // /api/data so the dashboards still render with real-shaped data.
         console.warn("Shohay backend unavailable — using offline demo data.", err);
-        updateData(FALLBACK_DATA);
-        setReady(true);
-      });
+        if (alive) setData(normalizeData(FALLBACK_DATA));
+      })
+      .finally(() => alive && setReady(true));
+    return () => { alive = false; };
   }, []);
 
+  const addNeed = useCallback((n: Need) => setData((d) => ({ ...d, needs: [n, ...d.needs] })), []);
+  const addFieldLog = useCallback((f: FieldLog) => setData((d) => ({ ...d, fieldLogs: [f, ...d.fieldLogs] })), []);
+  const addDonation = useCallback((don: MyDonation) => setData((d) => ({ ...d, myDonations: [don, ...d.myDonations] })), []);
+
+  const value = useMemo<DataState>(() => ({ data, addNeed, addFieldLog, addDonation }), [data, addNeed, addFieldLog, addDonation]);
 
   if (!ready) {
     return (
@@ -97,5 +116,20 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return <DataCtx.Provider value={value}>{children}</DataCtx.Provider>;
+}
+
+/** Live domain data — re-renders the caller whenever the store changes. */
+export function useData(): AppData {
+  const ctx = useContext(DataCtx);
+  if (!ctx) throw new Error("useData must be used within AppDataProvider");
+  return ctx.data;
+}
+
+/** Store mutators (add a need / field log / donation). */
+export function useDataActions(): Omit<DataState, "data"> {
+  const ctx = useContext(DataCtx);
+  if (!ctx) throw new Error("useDataActions must be used within AppDataProvider");
+  const { addNeed, addFieldLog, addDonation } = ctx;
+  return { addNeed, addFieldLog, addDonation };
 }
